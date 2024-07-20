@@ -1,0 +1,13 @@
+{
+  "version": "1.0.0",
+  "main": "src/main.js",
+  "type": "module",
+  "dependencies": {
+    "electron": "^31.2.1",
+    "puppeteer": "^22.13.1",
+    "puppeteer-core": "^22.13.1"
+  },
+  "scripts": {
+    "start": "electron ."
+  }
+}
