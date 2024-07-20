@@ -27,8 +27,8 @@ function createWindow() {
   determineChromePath();
 
   mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1200,
+    height: 800,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -38,8 +38,6 @@ function createWindow() {
   });
 
   mainWindow.loadFile(path.join(__dirname, "public", "index.html"));
-
-  mainWindow.webContents.openDevTools();
 }
 
 // Handle gift code redemption

@@ -13,6 +13,8 @@ document.getElementById("redeemForm").addEventListener("submit", async (e) => {
   document.getElementById("progress").innerText = "0%";
   document.querySelector(".progress-bar span").style.width = "0%";
 
+  log.innerHTML += "<div class='log-entry'>Redeeming gift codes...</div>";
+
   try {
     // Call the redeem gift code function
     const results = await window.electron.redeemGiftCode({

@@ -1,32 +1,143 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gift Code Redemption</title>
-  <style>
-    /* Add some basic styling */
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    #log { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; background: #f9f9f9; }
-    .log-entry { margin-bottom: 10px; }
-    .progress-bar { width: 100%; background: #e0e0e0; height: 20px; margin-top: 10px; position: relative; }
-    .progress-bar span { display: block; height: 100%; background: #76c7c0; text-align: center; color: white; line-height: 20px; }
-  </style>
-</head>
-<body>
-  <h1>Gift Code Redemption</h1>
-  <form id="redeemForm">
-    <label for="playerIds">Player IDs (comma-separated):</label>
-    <input type="text" id="playerIds" required><br><br>
-    <label for="giftcode">Gift Code:</label>
-    <input type="text" id="giftcode" required><br><br>
-    <button type="submit">Redeem Gift Code</button>
-  </form>
-  <h2>Logs:</h2>
-  <div id="log"></div>
-  <div class="progress-bar">
-    <span id="progress">0%</span>
-  </div>
-  <script src="renderer.js"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gift Code Redemption</title>
+    <style>
+      /* Reset some default styles */
+      body,
+      h1,
+      h2,
+      form,
+      input,
+      button {
+        margin: 0;
+        padding: 0;
+      }
+
+      /* Basic styling */
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f4f4f9;
+      }
+
+      h1 {
+        font-size: 24px;
+        color: #333;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      h2 {
+        font-size: 18px;
+        color: #555;
+        margin-bottom: 10px;
+      }
+
+      form {
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      label {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 5px;
+        display: block;
+      }
+
+      input[type="text"] {
+        width: calc(100% - 22px);
+        padding: 10px;
+        margin-bottom: 15px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+
+      button {
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 4px;
+        font-size: 16px;
+        cursor: pointer;
+        display: block;
+        width: 100%;
+      }
+
+      button:hover {
+        background-color: #0056b3;
+      }
+
+      #log {
+        background-color: #fff;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        padding: 15px;
+        height: 300px;
+        overflow-y: auto;
+        margin: 20px 0;
+      }
+
+      .log-entry {
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 4px;
+        background-color: #f9f9f9;
+        border: 1px solid #eee;
+      }
+
+      .log-entry:nth-child(even) {
+        background-color: #f1f1f1;
+      }
+
+      .progress-bar {
+        width: 100%;
+        background-color: #e0e0e0;
+        border-radius: 4px;
+        height: 20px;
+        margin-top: 10px;
+        position: relative;
+      }
+
+      .progress-bar span {
+        display: block;
+        height: 100%;
+        background-color: #76c7c0;
+        text-align: center;
+        color: #fff;
+        line-height: 20px;
+        border-radius: 4px;
+        position: absolute;
+        left: 0;
+        top: 0;
+        transition: width 0.3s ease-in-out;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Gift Code Redemption</h1>
+    <form id="redeemForm">
+      <label for="playerIds">Player IDs (comma-separated):</label>
+      <input type="text" id="playerIds" required />
+      <label for="giftcode">Gift Code:</label>
+      <input type="text" id="giftcode" required />
+      <button type="submit">Redeem Gift Code</button>
+    </form>
+    <h2>Logs:</h2>
+    <div id="log"></div>
+    <div class="progress-bar">
+      <span id="progress">0%</span>
+    </div>
+    <script src="renderer.js"></script>
+  </body>
 </html>
