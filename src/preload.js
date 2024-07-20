@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("electron", {
-  selectChrome: () => ipcRenderer.invoke("select-chrome"),
-  redeemGiftCode: (data) => ipcRenderer.invoke("redeem-gift-code", data),
+  redeemGiftCode: (args) => ipcRenderer.invoke("redeem-gift-code", args),
+  onProgressUpdate: (callback) =>
+    ipcRenderer.on("progress-update", (event, progress) => callback(progress)),
 });

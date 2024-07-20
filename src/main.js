@@ -1,14 +1,31 @@
-import { app, BrowserWindow, ipcMain, dialog } from "electron";
+import { app, BrowserWindow, ipcMain } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
+import os from "os";
 
-// Get the directory name of the current module
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 let mainWindow;
+let chromePath;
+
+function determineChromePath() {
+  const platform = os.platform();
+
+  if (platform === "darwin") {
+    chromePath = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+  } else if (platform === "win32") {
+    chromePath = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
+  } else if (platform === "linux") {
+    chromePath = "/usr/bin/google-chrome";
+  } else {
+    throw new Error("Unsupported platform");
+  }
+}
 
 function createWindow() {
+  determineChromePath();
+
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
@@ -22,125 +39,99 @@ function createWindow() {
 
   mainWindow.loadFile(path.join(__dirname, "public", "index.html"));
 
-  // Open the DevTools (optional)
-  //   mainWindow.webContents.openDevTools();
+  mainWindow.webContents.openDevTools();
 }
 
-// Handle Chrome path selection
-ipcMain.handle("select-chrome", async () => {
+// Handle gift code redemption
+ipcMain.handle("redeem-gift-code", async (event, { playerIds, giftcode }) => {
+  const results = [];
+
   try {
-    const result = await dialog.showOpenDialog(mainWindow, {
-      title: "Select Chrome Executable",
-      buttonLabel: "Select",
-      properties: ["openFile"],
-      filters: [{ name: "Applications", extensions: ["exe", "app"] }],
+    if (!chromePath) {
+      throw new Error("Chrome path is not set.");
+    }
+
+    console.log("Using Chrome executable at:", chromePath);
+
+    const browser = await puppeteer.launch({
+      executablePath: chromePath,
+      headless: true,
     });
 
-    if (result.canceled || result.filePaths.length === 0) {
-      throw new Error("No file selected");
-    }
+    const page = await browser.newPage();
 
-    console.log(`Selected Chrome executable path: ${result.filePaths[0]}`);
-    return result.filePaths[0];
-  } catch (error) {
-    console.error("Failed to select Chrome executable:", error);
-    throw error;
-  }
-});
+    for (const [index, playerId] of playerIds.entries()) {
+      await page.goto("https://wos-giftcode.centurygame.com/");
+      await page.setViewport({ width: 1080, height: 1024 });
 
-// Handle gift code redemption
-ipcMain.handle(
-  "redeem-gift-code",
-  async (event, { chromePath, playerIds, giftcode }) => {
-    console.log(`Starting gift code redemption process...`);
-    console.log(`Using Chrome executable at: ${chromePath}`);
-    console.log(`Gift code: ${giftcode}`);
-    console.log(`Player IDs: ${playerIds.join(", ")}`);
+      const playerIdInput = await page.waitForSelector(
+        'input[placeholder="Player ID"]'
+      );
+      await playerIdInput.type(playerId.toString());
 
-    try {
-      const browser = await puppeteer.launch({
-        executablePath: chromePath,
-        headless: true, // Set to true if you don't want to see the browser window
-      });
+      const loginButton = await page.waitForSelector("div.btn.login_btn");
+      await loginButton.click();
 
-      const page = await browser.newPage();
+      let loggedIn = false;
 
-      for (const playerId of playerIds) {
-        console.log(`Processing Player ID: ${playerId}`);
-        await page.goto("https://wos-giftcode.centurygame.com/");
-        console.log(`Navigated to the gift code page`);
+      const playerNameSelector = ".roleInfo_con .name";
+      const furnaceLevelSelector = ".roleInfo_con .other img.level_icon";
+      const stateSelector = ".roleInfo_con .other:nth-child(3)";
 
-        await page.setViewport({ width: 1080, height: 1024 });
+      try {
+        await page.waitForSelector(playerNameSelector, { timeout: 5000 });
+        await page.waitForSelector(furnaceLevelSelector, { timeout: 5000 });
+        await page.waitForSelector(stateSelector, { timeout: 5000 });
 
-        const playerIdInput = await page.waitForSelector(
-          'input[placeholder="Player ID"]'
+        const playerName = await page.$eval(playerNameSelector, (el) =>
+          el.textContent.trim()
         );
-        await playerIdInput.type(playerId.toString());
-        console.log(`Entered Player ID: ${playerId}`);
+        const furnaceLevel = await page.$eval(
+          furnaceLevelSelector,
+          (el) => el.src
+        );
+        const state = await page.$eval(stateSelector, (el) =>
+          el.textContent.trim()
+        );
 
-        const loginButton = await page.waitForSelector("div.btn.login_btn");
-        await loginButton.click();
-        console.log(`Clicked the login button`);
+        const info = `Player Name: ${playerName}, Furnace Level: ${furnaceLevel}, State: ${state}`;
+        console.log("Player Info:", info);
+        results.push({ playerId, info });
 
-        let loggedIn = false;
-
-        const playerNameSelector = ".roleInfo_con .name";
-        const furnaceLevelSelector = ".roleInfo_con .other img.level_icon";
-        const stateSelector = ".roleInfo_con .other:nth-child(3)";
-
-        try {
-          await page.waitForSelector(playerNameSelector, { timeout: 5000 });
-          await page.waitForSelector(furnaceLevelSelector, { timeout: 5000 });
-          await page.waitForSelector(stateSelector, { timeout: 5000 });
-
-          const playerName = await page.$eval(playerNameSelector, (el) =>
-            el.textContent.trim()
-          );
-          const furnaceLevel = await page.$eval(
-            furnaceLevelSelector,
-            (el) => el.src
-          );
-          const state = await page.$eval(stateSelector, (el) =>
-            el.textContent.trim()
-          );
-
-          console.log("Player Name:", playerName);
-          console.log("Furnace Level:", furnaceLevel);
-          console.log("State:", state);
-
-          loggedIn = true;
-        } catch (error) {
-          console.error("Player info did not appear:", error);
-        }
-
-        console.log("Logged In:", loggedIn);
-
-        if (loggedIn) {
-          const giftCodeInput = await page.waitForSelector(
-            'input[placeholder="Enter Gift Code"]'
-          );
-          await giftCodeInput.type(giftcode);
-          console.log(`Entered gift code: ${giftcode}`);
-
-          const confirmButton = await page.waitForSelector(
-            "div.btn.exchange_btn"
-          );
-          await confirmButton.click();
-          console.log(`Clicked the confirm button`);
-
-          console.log("Gift Code Entered and Confirmed");
-        } else {
-          console.log("Failed to log in for Player ID:", playerId);
-        }
+        loggedIn = true;
+      } catch (error) {
+        console.error("Player info did not appear:", error);
+        results.push({ playerId, info: "Player info not available." });
       }
 
-      await browser.close();
-      console.log("Browser closed");
-    } catch (error) {
-      console.error("Error during automation:", error);
+      if (loggedIn) {
+        const giftCodeInput = await page.waitForSelector(
+          'input[placeholder="Enter Gift Code"]'
+        );
+        await giftCodeInput.type(giftcode);
+
+        const confirmButton = await page.waitForSelector(
+          "div.btn.exchange_btn"
+        );
+        await confirmButton.click();
+
+        console.log("Gift Code Entered and Confirmed");
+      } else {
+        console.log("Failed to log in for Player ID:", playerId);
+      }
+
+      // Send progress update to renderer
+      const progress = Math.round(((index + 1) / playerIds.length) * 100);
+      mainWindow.webContents.send("progress-update", progress);
     }
+
+    await browser.close();
+    return results;
+  } catch (error) {
+    console.error("Error during automation:", error);
+    throw new Error(`Error: ${error.message}`);
   }
-);
+});
 
 app.whenReady().then(() => {
   createWindow();
